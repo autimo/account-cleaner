@@ -19,7 +19,7 @@ do
             AC_RESOURCES="$OPTARG"
             ;;
         *)
-            echo "usage: $0 [-f] account_id" >&2
+            echo "usage: $0 [-e] [-f] [-r] account_id" >&2
             exit
             ;;
     esac
