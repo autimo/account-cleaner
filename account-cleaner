@@ -1,0 +1,70 @@
+#!/bin/bash
+
+clean_up () {
+  rm -rf .aws/
+  echo "Done"
+}
+trap clean_up EXIT
+
+account_id="$1"
+
+rm -rf generated/
+
+mkdir -p .aws
+
+export AWS_CONFIG_FILE="${PWD}/.aws/config"
+export AWS_SHARED_CREDENTIALS_FILE="${PWD}/.aws/credentials"
+
+cat > "$AWS_SHARED_CREDENTIALS_FILE" <<EOF
+[terraformer-credentials]
+    aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+    aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+    aws_session_token = ${AWS_SESSION_TOKEN}
+EOF
+
+cat > "$AWS_CONFIG_FILE" <<EOF
+[profile terraformer]
+    role_arn = arn:aws:iam::${account_id}:role/AWSCloudFormationStackSetExecutionRole
+    source_profile = terraformer-credentials
+    region = ca-central-1
+EOF
+
+cat > versions.tf <<EOF
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+  required_version = ">= 0.13"
+}
+EOF
+
+unset $(env | grep AWS_ | grep -oE "^[^=]+")
+
+export AWS_CONFIG_FILE="${PWD}/.aws/config"
+export AWS_SHARED_CREDENTIALS_FILE="${PWD}/.aws/credentials"
+export AWS_SDK_LOAD_CONFIG=1
+export AWS_PROFILE="terraformer"
+
+terraform init
+
+terraformer plan aws \
+  --resources "alb" \
+  --excludes accessanalyzer,cloudtrail,cloudwatch,config,iam,kms,logs,nacl,nat,organization,route_table,securityhub,subnet,vpc \
+  --regions ca-central-1 \
+  --profile terraformer
+
+./filters/asea > plan.json
+
+terraformer import plan plan.json
+
+for d in generated/aws/*/ ; do
+  if [ ! -f "${d%/}/terraform.tfstate" ]; then
+    continue
+  fi
+  cd "$d" || exit
+  terraform init
+  terraform plan
+  cd - || exit
+done

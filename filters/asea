@@ -1,0 +1,36 @@
+#!/bin/bash
+
+jq '
+. 
+  # # remove resource objects with "Accelerator" tag 
+  # | del(.ImportedResource[][]?
+  #   | select(
+  #       .InstanceState.attributes."tags.Accelerator"
+  #     )
+  #   )
+  # # remove resource objects containing string
+  # | del(.ImportedResource[][]?
+  #   | select(
+  #       # (select(.InstanceState.id != null) | .InstanceState.id | contains("PBMMAccel", "pbmmaccel")) or
+  #       (select(.InstanceState.id != null) | .InstanceState.id | contains("AWSCloudFormationStackSetExecutionRole")) or
+  #       (select(.InstanceState.id != null) | .InstanceState.id | contains("loadbalancer/app/Core-")) or
+  #       (select(.InstanceState.id != null) | .InstanceState.id | contains("targetgroup/Core-health-check-Lambda")) or
+  #       (select(.InstanceState.id != null) | .InstanceState.id | contains("listener/app/Core-")) or
+  #       (select(.InstanceState.id != null) | .InstanceState.id | contains("secret:accelerator/"))
+  #     )
+  #   )
+  # # remove resource objects matching regex
+  # | del(.ImportedResource[][]?
+  #   | select(
+  #       (select(.InstanceState.id != null) | .InstanceState.id | test("^.*Default.*Budget.*$"))
+  #     )
+  #   )
+  # remove resources types that are null or []
+  | .ImportedResource 
+    |= with_entries(
+      select(
+        .value
+          | (. != null) and (. != [])
+      )
+    )
+' generated/aws/terraformer/plan.json
