@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Example filter that passes though the original value i.e. no filter
+
+[ $# -ge 1 ] && [ -f "$1" ] && input="$1" || input="-"
+
+jq '.' $input

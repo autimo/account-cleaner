@@ -36,6 +36,5 @@ terraform.rc
 .terraform.lock.hcl
 
 generated/
-
 plan.json
 versions.tf
