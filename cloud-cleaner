@@ -5,6 +5,7 @@ AC_FILTERED_PLAN_FILE="plan.json"
 AC_FILTERS=asea
 AC_EXCLUDES="accessanalyzer,cloudtrail,cloudwatch,config,eni,iam,kms,logs,nacl,nat,organization,route_table,securityhub,subnet,vpc"
 AC_RESOURCES="*"
+ORG_ADMIN_ROLE=${ORG_ADMIN_ROLE:-AWSCloudFormationStackSetExecutionRole}
 
 while getopts 'e:f:r:' flag
 do
@@ -37,7 +38,7 @@ aws_shared_credentials_file="${PWD}/.aws/credentials"
 
 cat > "$aws_config_file" <<EOF
 [profile terraformer]
-    role_arn = arn:aws:iam::${account_id}:role/AWSCloudFormationStackSetExecutionRole
+    role_arn = arn:aws:iam::${account_id}:role/${ORG_ADMIN_ROLE}
     source_profile = terraformer-credentials
     region = ca-central-1
 EOF
